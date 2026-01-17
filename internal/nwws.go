@@ -3,7 +3,6 @@ package nwws
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/metdatasystem/us/shared/streaming"
+	nwwsv1 "github.com/metdatasystem/protos/gen/nwws/v1"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/xmppo/go-xmpp"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type XmppConfig struct {
@@ -169,22 +170,20 @@ func NWWS(logLevel zerolog.Level) {
 							// Remove extra newlines
 							text := strings.ReplaceAll(elem.String(), "\n\n", "\n")
 
-							// Build the message
-							message := streaming.AWIPSRaw{
-								Issued: *issued,
-								TTAAII: ttaaii,
-								CCCC:   cccc,
-								AWIPS:  awips,
-								Text:   text,
-							}
-							data, err := json.Marshal(message)
+							data, err := proto.Marshal(&nwwsv1.Message{
+								Received: timestamppb.New(*issued),
+								Ttaaii:   ttaaii,
+								Cccc:     cccc,
+								Awips:    awips,
+								Text:     text,
+							})
 							if err != nil {
 								log.Error().Err(err).Msg("failed to marshal awips raw message")
 								continue
 							}
 
 							// Share the message
-							producer.messages <- Message{"application/json", data}
+							producer.messages <- Message{"application/protobuf", data}
 							health.NWWSProduced.Inc()
 						}
 					}
