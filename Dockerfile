@@ -1,6 +1,6 @@
 FROM golang:1.25.5 AS build
 
-LABEL description="A service supporting the ingest of AWIPS products into the US MDS."
+LABEL description="A service supporting the ingest of text products from the NWWS-OI."
 
 # Set destination for COPY
 WORKDIR /app
@@ -14,6 +14,6 @@ RUN go mod download
 COPY . ./
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -C ./cmd/ingest/awips -o /app/awips
+RUN CGO_ENABLED=0 GOOS=linux go build -C ./cmd -o /app/nwws
 
-ENTRYPOINT [ "/app/awips", "nwws" ]
+ENTRYPOINT [ "/app/nwws", "nwws" ]
